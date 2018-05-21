@@ -4,6 +4,7 @@ import sys
 import os
 import string
 import subprocess
+import getopt
 
 new_string = ''
 
@@ -33,17 +34,17 @@ def convert_ieee754(hex_val):
 #    sys.exit()
 
 def ReadVoltage():
-    instrument = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
+    instrument = minimalmodbus.Instrument('/dev/ttyUSB1', 1)
     instrument.serial.port
     instrument.serial.baudrate = 19200
     instrument.serial.bytesize
     instrument.serial.parity = serial.PARITY_EVEN
-    VoltajMSB = instrument.read_register(3027)
-    VoltajLSB = instrument.read_register(3026)
-	#   Frecventa = instrument.read_register(3109)
-    print (hex(VoltajMSB))
-    print (hex(VoltajLSB))
-#   print (hex(Frecventa))
+    VoltajMSB = instrument.read_register(3035)
+    VoltajLSB = instrument.read_register(3035)
+#   Frecventa = instrument.read_register(3109)
+#    print (hex(VoltajMSB))
+#    print (hex(VoltajLSB))
+#    print (hex(Frecventa))
     TotalVoltage = hex(VoltajMSB) + hex(VoltajLSB)
     str(TotalVoltage)
     new_str =  string.replace(TotalVoltage, '0x', '')
@@ -56,7 +57,7 @@ def ReadVoltage():
     return FinalValue
 
 def TotalEnergy():
-    instrument = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
+    instrument = minimalmodbus.Instrument('/dev/ttyUSB1', 1)
     instrument.serial.port
     instrument.serial.baudrate = 19200
     instrument.serial.bytesize
@@ -69,7 +70,7 @@ def TotalEnergy():
     return TotalEnergy_INT64
 
 def Frequency():
-    instrument = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
+    instrument = minimalmodbus.Instrument('/dev/ttyUSB1', 1)
     instrument.serial.port
     instrument.serial.baudrate = 19200
     instrument.serial.bytesize
@@ -82,13 +83,44 @@ def Frequency():
     FinalFreq = convert_ieee754(frq)
     return FinalFreq
 
-def main():
+def L1Current():
+    instrument = minimalmodbus.Instrument('/dev/ttyUSB1', 1)
+    instrument.serial.port
+    instrument.serial.baudrate = 19200
+    instrument.serial.bytesize
+    instrument.serial.parity = serial.PARITY_EVEN
+    eL1CurrentMSB = instrument.read_register(3009)
+    eL1CurrentLSB = instrument.read_register(3010)
+    TotalL1Current = hex(eL1CurrentMSB) + hex(eL1CurrentLSB)
+    str(TotalL1Current)
+    amps =  string.replace(TotalL1Current, '0x', '')
+    FinalCurrent = convert_ieee754(amps)
+    return FinalCurrent
+
+def main(argv):
     voltaj = ReadVoltage()
     energy = TotalEnergy()
     freq = Frequency()
-    print voltaj
-    print energy/1000
-    print freq
-    return
-main()
-
+    current = L1Current()
+#    print voltaj
+#    print energy/1000
+#    print freq
+#    print current
+try:
+    opts, args = getopt.getopt(sys.argv[1:], "v:ae:h", ['volts', 'amps', 'energy','help'])
+except getopt.GetoptError as err:
+    print "Option not available"
+    sys.exit(2)
+for opt, arg in opts:
+    if opt in ('-v', '--volts'):
+       print ReadVoltage()
+       sys.exit(2)
+    elif opt in ('-a', '--amps'):
+       print L1Current()
+    elif opt in ('-e', '--energy'):
+       print TotalEnergy()
+    elif opt in ('-h', '--help'):
+       print "help"
+    else:
+       print "Error calling function"
+       sys.exit(2)
